@@ -8,6 +8,12 @@
 import SwiftUI
 import MapKit
 
+struct FoodMemory: Identifiable {
+    let id = UUID()
+    var coordinate: CLLocationCoordinate2D
+    var name: String
+}
+
 struct ContentView: View {
     
     // defining the map region
@@ -18,11 +24,15 @@ struct ContentView: View {
         )
     )
     
+    @State private var foodMemories: [FoodMemory] = []
+    @State private var showingAddMemory = false
+    @State private var newPinCoordinate: CLLocationCoordinate2D?
+    
+    
     @State private var searchText = ""
     
     var body: some View {
         VStack {
-            
             HStack {
                 TextField("Have a place in mind?", text: $searchText)
                     .padding(12)
@@ -39,8 +49,41 @@ struct ContentView: View {
             .padding()
             
             // display the map
-            Map(position: $position) {}
+            Map(position: $position) {
+                ForEach(foodMemories) { memory in
+                    
+                    Annotation(memory.name, coordinate: memory.coordinate) {
+                        Button(action: {
+                                                    // TODO: Show memory details when tapped
+                                                    print("Tapped memory: \(memory.name)")
+                                                }) {
+                            Image(systemName: "fork.knife.circle.fill")
+                                .foregroundColor(.purple)
+                                .font(.title2)
+                        }
+                    
+                    }
+                    
+                }
+                
+            }
             .ignoresSafeArea() // fills the entire screen
+            .onTapGesture { location in
+                // Convert tap location to coordinate
+                addFoodMemoryAt(tapLocation: location)
+            }
+        }
+        .sheet(isPresented: $showingAddMemory) {
+            AddMemoryView(
+                coordinate: newPinCoordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0),
+                onSave: { memory in
+                    foodMemories.append(memory)
+                    showingAddMemory = false
+                },
+                onCancel: {
+                    showingAddMemory = false
+                }
+            )
         }
     }
     
@@ -67,9 +110,71 @@ struct ContentView: View {
             }
         }
     }
+    
+    func addFoodMemoryAt(tapLocation: CGPoint) {
+            // For now, we'll use a simple approach - when user taps, we'll prompt them
+            // In a real implementation, you'd convert the tap location to a coordinate
+            // This is a simplified version that adds a pin at the current map center
+            let centerCoordinate = getCenterCoordinate()
+            newPinCoordinate = centerCoordinate
+            showingAddMemory = true
+        }
+        
+        func getCenterCoordinate() -> CLLocationCoordinate2D {
+            // Get the center of the current map view
+            // This is a simplified approach - in practice you'd want to get the actual center
+            return CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
+        }
 }
 
-#Preview {
-    ContentView()
-}
+// new view for adding memeory
+
+struct AddMemoryView: View {
+    let coordinate: CLLocationCoordinate2D
+    let onSave: (FoodMemory) -> Void
+    let onCancel: () -> Void
+    
+    @State private var memoryName = ""
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("Add Food Memory")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                TextField("What are the yum eats?", text: $memoryName)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal)
+                Text("Location: \(coordinate.latitude, specifier: "%.4f"), \(coordinate.longitude, specifier: "%.4f")")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                Spacer()
+                
+                HStack {
+                    Button("Cancel") {
+                        onCancel()
+                    }
+                    .foregroundColor(.red)
+                    
+                    Spacer()
+                    
+                    Button("Save") {
+                        if !memoryName.isEmpty {
+                            let memory = FoodMemory(coordinate: coordinate, name: memoryName)
+                            onSave(memory)
+                        }
+                    }
+                    .foregroundColor(.blue)
+                    .disabled(memoryName.isEmpty)
+                                    }
+                                    .padding()
+                                }
+                                .padding()
+                            }
+                        }
+                    }
+
+                    #Preview {
+                        ContentView()
+                    }
 
