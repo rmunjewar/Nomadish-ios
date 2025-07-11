@@ -9,11 +9,73 @@ import SwiftUI
 import MapKit
 
 struct FoodMemory: Identifiable {
-    let id = UUID()
+    let id = UUID
     var coordinate: CLLocationCoordinate2D
     var name: String
     var photo: UIImage?
     var dateAdded: Date
+    
+    // initializer for creating new memories
+    init(coordinate: CLLocationCoordinate2D, name: String, photo: UIImage?, dateAdded: Date) {
+        self.id = UUID()
+        self.coordinate = coordinate
+        self.name = name
+        self.photo = photo
+        self.dateAdded = dateAdded
+    }
+    
+    // initializer for loading from saved data
+    init(id: UUID, coordinate: CLLocationCoordinate2D, name: String, photo: UIImage?, dateAdded: Date) {
+        self.id = id
+        self.coordinate = coordinate
+        self.name = name
+        self.photo = photo
+        self.dateAdded = dateAdded
+    }
+    
+}
+
+class MemoryManager: ObserableObject {
+    @Published var foodMemories: [FoodMemory] = [] // published means to swift ui and foodmemories array initializerd
+    
+    private let userDefaults = UserDefaults.standard // only accesible within class, userdefaults means perstitent storage
+    private let memoriesKey = "SavedFoodMemories"
+    
+    init() {
+        loadMemories()
+    }
+    
+    func addMemory(_ memory: FoodMemory) { // function, _ means unnamed parameret,
+        foodMemories.append(memory) // appending new memeory to array
+        saveMemories() // saving memories
+    }
+    
+    func deleteMemory(_ memory: FoodMemory) {
+        foodMemories.removeAll{ $0.id == memory.id} // $0 means each element in array, check with id
+        saveMemories()
+    }
+    
+    private func saveMemories() {
+        let memoriesData = foodMemories.map { memory in
+            var data: [String: Any] = [ // [] is dictionary with string keys and any values
+                "id": memory.id.uuidString,             // .uuidString = converts UUID to String
+                                "latitude": memory.coordinate.latitude,  // Extract latitude from coordinate
+                                "longitude": memory.coordinate.longitude, // Extract longitude from coordinate
+                                "name": memory.name,                    // Memory name
+                                "dateAdded": memory.dateAdded
+            ]
+            
+            // save photo as data if it exists
+            if let photo = memory.photo, // if let means just checking tos ee if photo esists
+               let photoData = photo.jpegData(compressionQuality: 0.8) { // then the image gets converted to data with 80% of its quality
+                data["photoData"] = photoData // photo is added to dictionary
+            }
+            
+            return data //return dictionary
+        }
+        
+        userDefaults.set(memoriesData, forKey: memoriesKey) // saved to userDefaults
+    }
 }
 
 struct ContentView: View {
@@ -29,7 +91,6 @@ struct ContentView: View {
     @State private var foodMemories: [FoodMemory] = []
     @State private var showingAddMemory = false
     @State private var newPinCoordinate: CLLocationCoordinate2D?
-    
     @State private var searchText = ""
     
     var body: some View {
