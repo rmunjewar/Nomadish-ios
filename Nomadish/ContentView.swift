@@ -76,6 +76,36 @@ class MemoryManager: ObserableObject {
         
         userDefaults.set(memoriesData, forKey: memoriesKey) // saved to userDefaults
     }
+    
+    private func loadMemories() {
+        guard let memoriesData = userDefaults.array(forKey: memoriesKey) as? [[String: Any]] else {
+            return // exit if no saved data or wrong type
+        }
+        
+        foodMemories = memoriesData.compactMap { data in // compact map = transforms and filters nil values
+            guard let idString = data["id"] as? String,           // Extract and cast id string
+                              let id = UUID(uuidString: idString),            // Convert string to UUID
+                              let latitude = data["latitude"] as? Double,     // Extract latitude as Double
+                              let longitude = data["longitude"] as? Double,   // Extract longitude as Double
+                              let name = data["name"] as? String,             // Extract name as String
+                              let dateAdded = data["dateAdded"] as? Date else { // Extract date as Date
+                            return nil
+        }
+            let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            
+            var photo: UIImage? // declare optional photo variable
+            if let photoData = data["photoData"] as? Data { // if photo data exists
+                photo = UIImage(data: photoData) // convert data back to uiimage
+            }
+            
+            return FoodMemory(                           // Create and return FoodMemory instance
+                            id: id,                                  // Use existing ID
+                            coordinate: coordinate,                  // Use created coordinate
+                            name: name,                             // Use extracted name
+                            photo: photo,                           // Use converted photo
+                            dateAdded: dateAdded                    // Use extracted date
+                        )
+    }
 }
 
 struct ContentView: View {
