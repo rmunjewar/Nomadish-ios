@@ -196,6 +196,7 @@ struct ContentView: View {
                 return
             }
             
+            // animation
             withAnimation {
                 position = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)))
             }
@@ -333,7 +334,9 @@ struct ImagePicker: UIViewControllerRepresentable {
             picker.dismiss(animated: true)
         }
     }
+    
 }
+    
 
 #Preview {
     ContentView()
