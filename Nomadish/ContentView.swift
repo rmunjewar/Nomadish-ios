@@ -185,6 +185,7 @@ struct ContentView: View {
                     addFoodMemoryAt(tapLocation: location)
                 }
             }
+
             .navigationTitle("Nomadish")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -193,6 +194,7 @@ struct ContentView: View {
                         addMemoryAtCurrentLocation()
                     }) {
                         Image(systemName: "plus")
+
                     }
                 }
             }
@@ -232,6 +234,7 @@ struct ContentView: View {
         let search = MKLocalSearch(request: request)
         search.start { response, error in
             guard let coordinate = response?.mapItems.first?.placemark.coordinate else {
+
                 print("No results found for: \(searchText)")
                 return
             }
@@ -241,6 +244,7 @@ struct ContentView: View {
                     center: coordinate,
                     span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)
                 ))
+
             }
         }
     }
@@ -253,6 +257,7 @@ struct ContentView: View {
     
     func addFoodMemoryAt(tapLocation: CGPoint) {
         let centerCoordinate = getCurrentMapCenter()
+
         newPinCoordinate = centerCoordinate
         showingAddMemory = true
     }
@@ -264,6 +269,7 @@ struct ContentView: View {
 
 }
 
+
 struct AddMemoryView: View {
     let coordinate: CLLocationCoordinate2D
     let onSave: (FoodMemory) -> Void
@@ -272,6 +278,7 @@ struct AddMemoryView: View {
     @State private var memoryName = ""
     @State private var notes = ""
     @State private var rating = 3
+
     @State private var selectedPhoto: UIImage?
     @State private var showingImagePicker = false
     
@@ -282,6 +289,7 @@ struct AddMemoryView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                 
+
                 Button(action: {
                     showingImagePicker = true
                 }) {
@@ -331,6 +339,7 @@ struct AddMemoryView: View {
                     }
                 }
                 
+
                 Text("Location: \(coordinate.latitude, specifier: "%.4f"), \(coordinate.longitude, specifier: "%.4f")")
                     .font(.caption)
                     .foregroundColor(.gray)
@@ -354,6 +363,7 @@ struct AddMemoryView: View {
                                 dateAdded: Date(),
                                 notes: notes,
                                 rating: rating
+
                             )
                             onSave(memory)
                         }
@@ -366,6 +376,7 @@ struct AddMemoryView: View {
             .padding()
             .navigationTitle("New Memory")
             .navigationBarTitleDisplayMode(.inline)
+
             .sheet(isPresented: $showingImagePicker) {
                 ImagePicker(image: $selectedPhoto)
             }
