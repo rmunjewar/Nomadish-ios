@@ -200,18 +200,17 @@ struct ContentView: View {
                 addFoodMemoryAt(tapLocation: location)
             }
         }
-            .navigationTitle("Nomadish")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        addMemoryAtCurrentLocation()
-                    }) {
-                        Image(systemName: "plus")
-                    }
+        .navigationTitle("Nomadish")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    addMemoryAtCurrentLocation()
+                }) {
+                    Image(systemName: "plus")
                 }
             }
-            
+        }
         .sheet(isPresented: $showingAddMemory) {
             AddMemoryView(
                 coordinate: newPinCoordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0),
@@ -224,42 +223,68 @@ struct ContentView: View {
                 }
             )
         }
+        .sheet(isPresented: $showingMemoryDetail) {
+            if let memory = selectedMemory {
+                MemoryDetailView(
+                    memory: memory, // pass selected memory
+                    onDelete: {
+                        memoryManager.deleteMemory(memory)
+                        showingMemoryDetail = false
+                    },
+                    onClose: {
+                        showingMemoryDetail = false
+                    }
+                )
+            }
+        }
     }
     
     func searchForLocation() {
-        let request = MKLocalSearch.Request()
+        let request = MKLocalSearch.Request() // creating search request
         request.naturalLanguageQuery = searchText
         
-        let search = MKLocalSearch(request: request)
-        search.start { response, error in
+        let search = MKLocalSearch(request: request) //creating search object
+        search.start { response, error in // starting search
             guard let coordinate = response?.mapItems.first?.placemark.coordinate else {
-                print("No results found.")
+                print("No results found: \(searchText)")
                 return
             }
             
             // animation
             withAnimation {
-                position = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)))
+                position = .region(MKCoordinateRegion(
+                    center: coordinate, // Center on found location
+                    span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)
+                ))
             }
         }
     }
+        
+        func addMemoryAtCurrentLocation() {
+            let centerCoordinate = getCurrentMapcenter()
+            newPinCoordinate = centerCoordinate
+            showingAddMemory = true
+        }
     
     func addFoodMemoryAt(tapLocation: CGPoint) {
-        // For now, we'll use a simple approach - when user taps, we'll prompt them
-        // In a real implementation, convert the tap location to a coordinate
-        // This is a simplified version that adds a pin at the current map center
-        let centerCoordinate = getCenterCoordinate()
+        let centerCoordinate = getCurrentMapCenter()
         newPinCoordinate = centerCoordinate
         showingAddMemory = true
     }
     
-    func getCenterCoordinate() -> CLLocationCoordinate2D {
-        // Get the center of the current map view
-        // This is a simplified approach
-        return CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
-    }
+        func getCurrentMapCenter() -> CLLocationCoordinate2D {
+                // Extract center from current map position
+                switch position {
+                case .region(let region):
+                    return region.center // Return region center
+                default:
+                    return CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194) // Default to San Francisco
+                }
+            }
 }
 
+// MARK: add memory view
+    
 // New view for adding a memory
 struct AddMemoryView: View {
     let coordinate: CLLocationCoordinate2D
@@ -267,6 +292,8 @@ struct AddMemoryView: View {
     let onCancel: () -> Void
     
     @State private var memoryName = ""
+    @State private var notes = ""
+    @State private var rating = 3
     @State private var selectedPhoto: UIImage?
     @State private var showingImagePicker = false
     
@@ -307,6 +334,27 @@ struct AddMemoryView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
                 
+                TextField("Notes (optional)", text: $notes)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .padding(.horizontal)
+                                
+                // Rating picker
+                VStack {
+                    Text("Rating")
+                        .font(.headline)
+                    HStack {
+                        ForEach(1...5, id: \.self) { star in // Create 5 star buttons
+                            Button(action: {
+                                rating = star // Set rating
+                            }) {
+                                Image(systemName: star <= rating ? "star.fill" : "star") // Filled or empty star
+                                    .foregroundColor(star <= rating ? .purple : .gray)
+                                    .font(.title2)
+                            }
+                        }
+                    }
+                }
+                
                 Text("Location: \(coordinate.latitude, specifier: "%.4f"), \(coordinate.longitude, specifier: "%.4f")")
                     .font(.caption)
                     .foregroundColor(.gray)
@@ -338,6 +386,8 @@ struct AddMemoryView: View {
                 .padding()
             }
             .padding()
+            .navigationTitle("New Memory")
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingImagePicker) {
                 ImagePicker(image: $selectedPhoto)
             }
@@ -345,6 +395,9 @@ struct AddMemoryView: View {
     }
 }
 
+    // MARK: memory detail view
+    
+    
     struct ImagePicker: UIViewControllerRepresentable {
         @Binding var image: UIImage?
         
