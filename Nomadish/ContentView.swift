@@ -128,24 +128,29 @@ class MemoryManager: ObservableObject {
                         )
     }
 }
+    
+// MARK: Main Content View
 
 struct ContentView: View {
     
     // defining the map region
     @State private var position = MapCameraPosition.region(
         MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194), // defining where
-            span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07) // defining how zoomed in
-        )
+                    center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194), // San Francisco coordinates
+                    span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07) // zoom level
+                )
     )
     
-    @State private var foodMemories: [FoodMemory] = []
+    @StateObject private var memoryManager = MemoryManager()
+    @State private var selectedMemory: FoodMemory?
+    @State private var showingMemoryDetail = false
     @State private var showingAddMemory = false
     @State private var newPinCoordinate: CLLocationCoordinate2D?
     @State private var searchText = ""
     
     var body: some View {
-        VStack {
+        NavigationView { // navigation view for toolbar
+            VStack(spacing: 0) {
             HStack {
                 TextField("Have a place in mind?", text: $searchText)
                     .padding(12)
@@ -157,6 +162,7 @@ struct ContentView: View {
                 }) {
                     Image(systemName: "magnifyingglass")
                         .padding()
+                        .foregroundColor(.blue)
                 }
             }
             .padding()
@@ -164,23 +170,25 @@ struct ContentView: View {
             // display the map
             Map(position: $position) {
                 // Show all existing food memories as pins
-                ForEach(foodMemories) { memory in
+                ForEach(memoryManager.foodMemories) { memory in
                     Annotation(memory.name, coordinate: memory.coordinate) {
                         Button(action: {
-                            // TODO: Show memory details when tapped
-                            print("Tapped memory: \(memory.name)")
+                            selectedMemory = memory
+                            showingMemoryDetail = true
                         }) {
                             if let photo = memory.photo {
-                                Image(uiImage: photo)
+                                Image(uiImage: photo) // displaing user's photo
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
                                     .frame(width: 40, height: 40)
                                     .clipShape(Circle())
                                     .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                                    .shadow(radius: 3)
                             } else {
                                 Image(systemName: "fork.knife.circle.fill")
                                     .foregroundColor(.red)
                                     .font(.title2)
+                                    .shadow(radius: 3)
                             }
                         }
                     }
@@ -192,6 +200,18 @@ struct ContentView: View {
                 addFoodMemoryAt(tapLocation: location)
             }
         }
+            .navigationTitle("Nomadish")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        addMemoryAtCurrentLocation()
+                    }) {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            
         .sheet(isPresented: $showingAddMemory) {
             AddMemoryView(
                 coordinate: newPinCoordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0),
@@ -325,34 +345,35 @@ struct AddMemoryView: View {
     }
 }
 
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.delegate = context.coordinator
-        picker.sourceType = .photoLibrary
-        return picker
-    }
-    
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
+    struct ImagePicker: UIViewControllerRepresentable {
+        @Binding var image: UIImage?
         
-        init(_ parent: ImagePicker) {
-            self.parent = parent
+        func makeUIViewController(context: Context) -> UIImagePickerController {
+            let picker = UIImagePickerController()
+            picker.delegate = context.coordinator
+            picker.sourceType = .photoLibrary
+            return picker
         }
         
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.image = image
+        func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+        
+        func makeCoordinator() -> Coordinator {
+            Coordinator(self)
+        }
+        
+        class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+            let parent: ImagePicker
+            
+            init(_ parent: ImagePicker) {
+                self.parent = parent
             }
-            picker.dismiss(animated: true)
+            
+            func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+                if let image = info[.originalImage] as? UIImage {
+                    parent.image = image
+                }
+                picker.dismiss(animated: true)
+            }
         }
     }
     
