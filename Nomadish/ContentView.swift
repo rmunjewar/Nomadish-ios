@@ -396,7 +396,91 @@ struct AddMemoryView: View {
 }
 
     // MARK: memory detail view
-    
+    struct MemoryDetailView: View {
+        let memory: FoodMemory
+        let onDelete = () -> Void
+        let onClose = () -> Void
+        
+        var body: some View {
+            NavigationView {
+                Vstack(spacing: 15) {
+                    if let photo = memory.photo {
+                        Image(uiImage: photo) // Display memory photo
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fit)
+                                                .frame(maxHeight: 300)
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        } else {
+                                            Image(systemName: "fork.knife") // Default food icon
+                                                .font(.system(size: 60))
+                                                .foregroundColor(.gray)
+                                        }
+                    Text(memory.name)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    // rating display
+                                    HStack {
+                                        ForEach(1...5, id: \.self) { star in
+                                            Image(systemName: star <= memory.rating ? "star.fill" : "star") // Show filled/empty stars
+                                                .foregroundColor(star <= memory.rating ? .yellow : .gray)
+                                        }
+                                    }
+                                    
+                                    // Notes display
+                                    if !memory.notes.isEmpty {
+                                        VStack(alignment: .leading) {
+                                            Text("Notes:")
+                                                .font(.headline)
+                                            Text(memory.notes)
+                                                .font(.body)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                    // Date and location info
+                                   VStack(alignment: .leading, spacing: 8) {
+                                       Text("Added: \(memory.dateAdded, formatter: dateFormatter)") // Format date
+                                           .font(.caption)
+                                           .foregroundColor(.secondary)
+                                       
+                                       Text("Location: \(memory.coordinate.latitude, specifier: "%.4f"), \(memory.coordinate.longitude, specifier: "%.4f")")
+                                           .font(.caption)
+                                           .foregroundColor(.secondary)
+                                   }
+                                   
+                                   Spacer() // Push buttons to bottom
+                                   
+                                   // Action buttons
+                                   HStack {
+                                       Button("Delete") { // Delete button
+                                           onDelete()
+                                       }
+                                       .foregroundColor(.red)
+                                       
+                                       Spacer()
+                                       
+                                       Button("Close") { // Close button
+                                           onClose()
+                                       }
+                                       .foregroundColor(.blue)
+                                   }
+                                   .padding()
+                               }
+                               .padding()
+                               .navigationTitle("Memory Details") // Navigation title
+                               .navigationBarTitleDisplayMode(.inline)
+                           }
+                       }
+                       
+                       // Date formatter for displaying dates
+                       private var dateFormatter: DateFormatter {
+                           let formatter = DateFormatter()
+                           formatter.dateStyle = .medium // Medium date style
+                           formatter.timeStyle = .short // Short time style
+                           return formatter
+                       }
+                   }
+
     
     struct ImagePicker: UIViewControllerRepresentable {
         @Binding var image: UIImage?
