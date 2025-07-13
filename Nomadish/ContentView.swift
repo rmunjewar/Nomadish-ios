@@ -27,6 +27,8 @@ struct FoodMemory: Identifiable {
         self.name = name
         self.photo = photo
         self.dateAdded = dateAdded
+        self.notes = notes
+        self.rating = rating
     }
     
     // initializer for loading from saved data
@@ -36,11 +38,16 @@ struct FoodMemory: Identifiable {
         self.name = name
         self.photo = photo
         self.dateAdded = dateAdded
+        self.notes = notes
+        self.rating = rating
     }
-    
 }
 
-class MemoryManager: ObserableObject {
+
+// MARK: Memory Manager
+
+// obserable object class to manage good memories
+class MemoryManager: ObservableObject {
     @Published var foodMemories: [FoodMemory] = [] // published means to swift ui and foodmemories array initializerd
     
     private let userDefaults = UserDefaults.standard // only accesible within class, userdefaults means perstitent storage
@@ -62,13 +69,15 @@ class MemoryManager: ObserableObject {
     
     private func saveMemories() {
         let memoriesData = foodMemories.map { memory in
-            var data: [String: Any] = [ // [] is dictionary with string keys and any values
-                "id": memory.id.uuidString,             // .uuidString = converts UUID to String
-                                "latitude": memory.coordinate.latitude,  // Extract latitude from coordinate
-                                "longitude": memory.coordinate.longitude, // Extract longitude from coordinate
-                                "name": memory.name,                    // Memory name
-                                "dateAdded": memory.dateAdded
-            ]
+            var data: [String: Any] = [ // Dictionary to store memory data
+                            "id": memory.id.uuidString, // Convert UUID to string for storage
+                            "latitude": memory.coordinate.latitude, // Store latitude
+                            "longitude": memory.coordinate.longitude, // Store longitude
+                            "name": memory.name, // Store food name
+                            "dateAdded": memory.dateAdded, // Store creation date
+                            "notes": memory.notes, // Store personal notes
+                            "rating": memory.rating // Store rating
+                        ]
             
             // save photo as data if it exists
             if let photo = memory.photo, // if let means just checking tos ee if photo esists
@@ -88,15 +97,20 @@ class MemoryManager: ObserableObject {
         }
         
         foodMemories = memoriesData.compactMap { data in // compact map = transforms and filters nil values
-            guard let idString = data["id"] as? String,           // Extract and cast id string
-                              let id = UUID(uuidString: idString),            // Convert string to UUID
-                              let latitude = data["latitude"] as? Double,     // Extract latitude as Double
-                              let longitude = data["longitude"] as? Double,   // Extract longitude as Double
-                              let name = data["name"] as? String,             // Extract name as String
-                              let dateAdded = data["dateAdded"] as? Date else { // Extract date as Date
-                            return nil
-        }
+            guard let idString = data["id"] as? String, // Extract ID string
+                              let id = UUID(uuidString: idString), // Convert to UUID
+                              let latitude = data["latitude"] as? Double, // Extract latitude
+                              let longitude = data["longitude"] as? Double, // Extract longitude
+                              let name = data["name"] as? String, // Extract name
+                              let dateAdded = data["dateAdded"] as? Date else { // Extract date
+                            return nil // Return nil if any required field is missing
+                        }
+            
             let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            
+            //optional fields
+            let notes = data["notes"] as? String ?? ""
+            let rating = data["rating"] as? Int ?? 3
             
             var photo: UIImage? // declare optional photo variable
             if let photoData = data["photoData"] as? Data { // if photo data exists
@@ -109,6 +123,8 @@ class MemoryManager: ObserableObject {
                             name: name,                             // Use extracted name
                             photo: photo,                           // Use converted photo
                             dateAdded: dateAdded                    // Use extracted date
+                            notes: notes,
+                            rating, rating
                         )
     }
 }
