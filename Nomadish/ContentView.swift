@@ -286,13 +286,8 @@ struct ContentView: View {
     }
     
     func getCurrentMapCenter() -> CLLocationCoordinate2D {
-        let pos = position
-
-        if case .region(let region) = pos {
-            return region.center
-        } else {
-            return CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
-        }
+        // Accessing the region property directly if the position is a region
+        return position.region?.center ?? CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
     }
 
 
