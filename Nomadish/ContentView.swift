@@ -8,12 +8,17 @@
 import SwiftUI
 import MapKit
 
+// MARK: Data Models
+
+// Model representing a food memory with location, photo, and metadata
 struct FoodMemory: Identifiable {
     let id = UUID
     var coordinate: CLLocationCoordinate2D
     var name: String
     var photo: UIImage?
     var dateAdded: Date
+    var notes: String
+    var rating: Int
     
     // initializer for creating new memories
     init(coordinate: CLLocationCoordinate2D, name: String, photo: UIImage?, dateAdded: Date) {
