@@ -7,7 +7,7 @@
 
 import SwiftUI
 import MapKit
-import FirebaseFirestone
+//import FirebaseFirestone
 import FirebaseStorage
 
 struct FoodMemory: Identifiable {
