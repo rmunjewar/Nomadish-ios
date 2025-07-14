@@ -7,6 +7,8 @@
 
 import SwiftUI
 import MapKit
+import FirebaseFirestone
+import FirebaseStorage
 
 struct FoodMemory: Identifiable {
     let id: UUID
@@ -17,7 +19,7 @@ struct FoodMemory: Identifiable {
     var notes: String
     var rating: Int
     
-    init(coordinate: CLLocationCoordinate22D, name: String, photo: UIImage?, dateAdded: Date, notes: String = "", rating: Int = 3) {
+    init(coordinate: CLLocationCoordinate2D, name: String, photo: UIImage?, dateAdded: Date, notes: String = "", rating: Int = 3) {
         self.id = UUID()
         self.coordinate = coordinate
         self.name = name
@@ -307,7 +309,7 @@ struct AddMemoryView: View {
                     }
                 }
                 
-                TextField("What did you eat here?", text: $memoryName)
+                TextField("What were the yummy eats?", text: $memoryName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
                 
