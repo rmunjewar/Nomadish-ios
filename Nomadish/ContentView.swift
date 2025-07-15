@@ -7,6 +7,8 @@
 
 import SwiftUI
 import MapKit
+import FirebaseFirestore
+import FirebaseStorage
 
 struct FoodMemory: Identifiable {
     let id: UUID
@@ -17,7 +19,8 @@ struct FoodMemory: Identifiable {
     var notes: String
     var rating: Int
     
-    init(coordinate: CLLocationCoordinate22D, name: String, photo: UIImage?, dateAdded: Date, notes: String = "", rating: Int = 3) {
+    init(coordinate: CLLocationCoordinate2D, name: String, photo: UIImage?, dateAdded: Date, notes: String = "", rating: Int = 3) {
+
         self.id = UUID()
         self.coordinate = coordinate
         self.name = name
@@ -143,6 +146,7 @@ struct ContentView: View {
                     TextField("Have a place in mind?", text: $searchText)
                         .padding(12)
                         .background(Color(.systemGray6))
+
                         .cornerRadius(10)
                     
                     Button(action: {
@@ -182,7 +186,8 @@ struct ContentView: View {
                 }
                 .ignoresSafeArea()
                 .onTapGesture { location in
-                    addFoodMemoryAt(tapLocation: location)
+                    let coordinate = convertTapToCoordinate(tapLocation: tapLocation)
+                    addFoodMemoryAt(coordinate: coordinate)
                 }
             }
 
@@ -265,10 +270,7 @@ struct ContentView: View {
     func getCurrentMapCenter() -> CLLocationCoordinate2D {
         return position.region?.center ?? CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
     }
-
-
 }
-
 
 struct AddMemoryView: View {
     let coordinate: CLLocationCoordinate2D
@@ -315,14 +317,14 @@ struct AddMemoryView: View {
                     }
                 }
                 
-                TextField("What did you eat here?", text: $memoryName)
+                TextField("What were the yummy eats?", text: $memoryName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
                 
                 TextField("Notes (optional)", text: $notes)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
-                
+
                 VStack {
                     Text("Rating")
                         .font(.headline)
@@ -363,8 +365,7 @@ struct AddMemoryView: View {
                                 dateAdded: Date(),
                                 notes: notes,
                                 rating: rating
-
-                            )
+            )
                             onSave(memory)
                         }
                     }
@@ -412,6 +413,7 @@ struct MemoryDetailView: View {
                     ForEach(1...5, id: \.self) { star in
                         Image(systemName: star <= memory.rating ? "star.fill" : "star")
                             .foregroundColor(star <= memory.rating ? .yellow : .gray)
+
                     }
                 }
                 
@@ -441,6 +443,7 @@ struct MemoryDetailView: View {
                     Button("Delete") {
                         onDelete()
                     }
+
                     .foregroundColor(.red)
                     
                     Spacer()
@@ -464,7 +467,7 @@ struct MemoryDetailView: View {
         formatter.timeStyle = .short
         return formatter
     }
-}
+
 
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
@@ -497,6 +500,7 @@ struct ImagePicker: UIViewControllerRepresentable {
         }
     }
 }
+
 
 #Preview {
     ContentView()
