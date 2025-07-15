@@ -140,11 +140,11 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            VStack() {
                 HStack {
                     TextField("Have a place in mind?", text: $searchText)
                         .padding(12)
-                        .background(Color(.systemGray6))
+                        .background(Color(.systemGray))
                         .cornerRadius(10)
                     
                     Button(action: {
@@ -184,7 +184,8 @@ struct ContentView: View {
                 }
                 .ignoresSafeArea()
                 .onTapGesture { location in
-                    addFoodMemoryAt(tapLocation: location)
+                    let coordinate = convertTapToCoordinate(tapLocation: tapLocation)
+                    addFoodMemoryAt(coordinate: coordinate)
                 }
             }
             .navigationTitle("Nomadish")
