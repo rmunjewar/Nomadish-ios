@@ -20,6 +20,7 @@ struct FoodMemory: Identifiable {
     var rating: Int
     
     init(coordinate: CLLocationCoordinate2D, name: String, photo: UIImage?, dateAdded: Date, notes: String = "", rating: Int = 3) {
+
         self.id = UUID()
         self.coordinate = coordinate
         self.name = name
@@ -140,11 +141,12 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack() {
+            VStack(spacing: 0) {
                 HStack {
                     TextField("Have a place in mind?", text: $searchText)
                         .padding(12)
-                        .background(Color(.systemGray))
+                        .background(Color(.systemGray6))
+
                         .cornerRadius(10)
                     
                     Button(action: {
@@ -188,6 +190,7 @@ struct ContentView: View {
                     addFoodMemoryAt(coordinate: coordinate)
                 }
             }
+
             .navigationTitle("Nomadish")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -196,6 +199,7 @@ struct ContentView: View {
                         addMemoryAtCurrentLocation()
                     }) {
                         Image(systemName: "plus")
+
                     }
                 }
             }
@@ -235,6 +239,7 @@ struct ContentView: View {
         let search = MKLocalSearch(request: request)
         search.start { response, error in
             guard let coordinate = response?.mapItems.first?.placemark.coordinate else {
+
                 print("No results found for: \(searchText)")
                 return
             }
@@ -244,6 +249,7 @@ struct ContentView: View {
                     center: coordinate,
                     span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)
                 ))
+
             }
         }
     }
@@ -256,6 +262,7 @@ struct ContentView: View {
     
     func addFoodMemoryAt(tapLocation: CGPoint) {
         let centerCoordinate = getCurrentMapCenter()
+
         newPinCoordinate = centerCoordinate
         showingAddMemory = true
     }
@@ -263,8 +270,6 @@ struct ContentView: View {
     func getCurrentMapCenter() -> CLLocationCoordinate2D {
         return position.region?.center ?? CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
     }
-
-
 }
 
 struct AddMemoryView: View {
@@ -275,6 +280,7 @@ struct AddMemoryView: View {
     @State private var memoryName = ""
     @State private var notes = ""
     @State private var rating = 3
+
     @State private var selectedPhoto: UIImage?
     @State private var showingImagePicker = false
     
@@ -285,6 +291,7 @@ struct AddMemoryView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                 
+
                 Button(action: {
                     showingImagePicker = true
                 }) {
@@ -317,7 +324,7 @@ struct AddMemoryView: View {
                 TextField("Notes (optional)", text: $notes)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
-                
+
                 VStack {
                     Text("Rating")
                         .font(.headline)
@@ -334,6 +341,7 @@ struct AddMemoryView: View {
                     }
                 }
                 
+
                 Text("Location: \(coordinate.latitude, specifier: "%.4f"), \(coordinate.longitude, specifier: "%.4f")")
                     .font(.caption)
                     .foregroundColor(.gray)
@@ -357,7 +365,7 @@ struct AddMemoryView: View {
                                 dateAdded: Date(),
                                 notes: notes,
                                 rating: rating
-                            )
+            )
                             onSave(memory)
                         }
                     }
@@ -369,6 +377,7 @@ struct AddMemoryView: View {
             .padding()
             .navigationTitle("New Memory")
             .navigationBarTitleDisplayMode(.inline)
+
             .sheet(isPresented: $showingImagePicker) {
                 ImagePicker(image: $selectedPhoto)
             }
@@ -404,6 +413,7 @@ struct MemoryDetailView: View {
                     ForEach(1...5, id: \.self) { star in
                         Image(systemName: star <= memory.rating ? "star.fill" : "star")
                             .foregroundColor(star <= memory.rating ? .yellow : .gray)
+
                     }
                 }
                 
@@ -433,6 +443,7 @@ struct MemoryDetailView: View {
                     Button("Delete") {
                         onDelete()
                     }
+
                     .foregroundColor(.red)
                     
                     Spacer()
@@ -456,7 +467,7 @@ struct MemoryDetailView: View {
         formatter.timeStyle = .short
         return formatter
     }
-}
+
 
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
@@ -489,6 +500,7 @@ struct ImagePicker: UIViewControllerRepresentable {
         }
     }
 }
+
 
 #Preview {
     ContentView()
