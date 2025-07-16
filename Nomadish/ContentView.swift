@@ -10,6 +10,10 @@ import MapKit
 import FirebaseFirestore
 import FirebaseStorage
 
+// need to add firebase
+// finish seeing what users can do
+// add other users functionality
+
 struct FoodMemory: Identifiable {
     let id: UUID
     var coordinate: CLLocationCoordinate2D
