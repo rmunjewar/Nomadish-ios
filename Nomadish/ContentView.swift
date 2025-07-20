@@ -13,7 +13,8 @@ import FirebaseStorage
 // need to add firebase
 // finish seeing what users can do
 // add other users functionality
-// need to add more
+// need to add more of this and that
+
 struct FoodMemory: Identifiable {
     let id: UUID
     var coordinate: CLLocationCoordinate2D
