@@ -7,9 +7,11 @@
 
 import SwiftUI
 import MapKit
-import FirebaseFirestore
-import FirebaseStorage
+import FirebaseFirestore // Keep for Day 2
+import FirebaseStorage // Keep for Day 2
+import CoreLocation // New import for CLLocationManager
 
+// MARK: - FoodMemory Struct
 struct FoodMemory: Identifiable {
     let id: UUID
     var coordinate: CLLocationCoordinate2D
@@ -41,6 +43,7 @@ struct FoodMemory: Identifiable {
     }
 }
 
+// MARK: - MemoryManager Class
 class MemoryManager: ObservableObject {
     @Published var foodMemories: [FoodMemory] = []
     
@@ -122,22 +125,67 @@ class MemoryManager: ObservableObject {
     }
 }
 
+// MARK: - LocationManager Class
+class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published var location: CLLocation?
+    @Published var authorizationStatus: CLAuthorizationStatus?
+    
+    private let locationManager = CLLocationManager()
+    
+    override init() {
+        super.init()
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.requestWhenInUseAuthorization() // requesting permissions when in use
+    }
+    
+    func requestLocation() {
+        locationManager.requestLocation()     }
+    
+    // MARK: - CLLocationManagerDelegate
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let latestLocation = locations.first else { return }
+        location = latestLocation
+        // locationManager.stopUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Failed to get user location: \(error.localizedDescription)")
+    }
+    
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        authorizationStatus = manager.authorizationStatus
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
+            locationManager.startUpdatingLocation()
+        case .denied, .restricted:
+            print("Location access denied or restricted.")
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+        @unknown default:
+            break
+        }
+    }
+}
+
+
+// MARK: - ContentView
 struct ContentView: View {
     
-    @State private var position: MapCameraPosition = .region(
-        MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
-            span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)
-        )
-    )
-
+    @State private var position: MapCameraPosition = .userLocation(fallback: .region(MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194), // San Francisco as fallback
+        span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)
+    )))
     
     @StateObject private var memoryManager = MemoryManager()
+    @StateObject private var locationManager = LocationManager()
+    
     @State private var selectedMemory: FoodMemory?
     @State private var showingMemoryDetail = false
     @State private var showingAddMemory = false
     @State private var newPinCoordinate: CLLocationCoordinate2D?
     @State private var searchText = ""
+    @State private var showingSearchAlert = false
     
     var body: some View {
         NavigationView {
@@ -146,7 +194,6 @@ struct ContentView: View {
                     TextField("Have a place in mind?", text: $searchText)
                         .padding(12)
                         .background(Color(.systemGray6))
-
                         .cornerRadius(10)
                     
                     Button(action: {
@@ -157,46 +204,58 @@ struct ContentView: View {
                             .foregroundColor(.blue)
                     }
                 }
-                .padding()
+                .padding(.horizontal)
                 
-                Map(position: $position) {
-                    ForEach(memoryManager.foodMemories) { memory in
-                        Annotation(memory.name, coordinate: memory.coordinate) {
-                            Button(action: {
-                                selectedMemory = memory
-                                showingMemoryDetail = true
-                            }) {
-                                if let photo = memory.photo {
-                                    Image(uiImage: photo)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 40, height: 40)
-                                        .clipShape(Circle())
-                                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                                        .shadow(radius: 3)
-                                } else {
-                                    Image(systemName: "fork.knife.circle.fill")
-                                        .foregroundColor(.red)
-                                        .font(.title2)
-                                        .shadow(radius: 3)
+                MapReader { proxy in
+                    Map(position: $position, interactionModes: .all) {
+                        UserAnnotation()
+                        
+                        ForEach(memoryManager.foodMemories) { memory in
+                            Annotation(memory.name, coordinate: memory.coordinate) {
+                                Button(action: {
+                                    selectedMemory = memory
+                                    showingMemoryDetail = true
+                                }) {
+                                    if let photo = memory.photo {
+                                        Image(uiImage: photo)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 40, height: 40)
+                                            .clipShape(Circle())
+                                            .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                                            .shadow(radius: 3)
+                                    } else {
+                                        Image(systemName: "fork.knife.circle.fill")
+                                            .foregroundColor(.red)
+                                            .font(.title2)
+                                            .shadow(radius: 3)
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                .ignoresSafeArea()
-                .onTapGesture { location in
-                    let coordinate = convertTapToCoordinate(tapLocation: tapLocation)
-                    addFoodMemoryAt(coordinate: coordinate)
+                    .onTapGesture { screenCoord in
+                        if let mapCoord = proxy.convert(screenCoord, from: .local) {
+                            newPinCoordinate = mapCoord
+                            showingAddMemory = true
+                        }
+                    }
                 }
             }
 
             .navigationTitle("Nomadish")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        centerMapOnUserLocation()
+                    }) {
+                        Image(systemName: "location.fill")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        addMemoryAtCurrentLocation()
+                        addMemoryAtCurrentMapCenter()
                     }) {
                         Image(systemName: "plus")
 
@@ -229,49 +288,69 @@ struct ContentView: View {
                     )
                 }
             }
+            .onAppear {
+                locationManager.requestLocation()
+            }
+            .alert("Location Not Found", isPresented: $showingSearchAlert) {
+                Button("OK") { }
+            } message: {
+                Text("Could not find a location for '\(searchText)'. Please try another.")
+            }
         }
     }
     
     func searchForLocation() {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = searchText
+        request.region = position.region ?? MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 100, longitudeDelta: 100))
         
         let search = MKLocalSearch(request: request)
         search.start { response, error in
-            guard let coordinate = response?.mapItems.first?.placemark.coordinate else {
-
+            guard let mapItem = response?.mapItems.first else {
                 print("No results found for: \(searchText)")
+                showingSearchAlert = true
                 return
             }
             
             withAnimation(.easeInOut(duration: 1.0)) {
                 position = .region(MKCoordinateRegion(
-                    center: coordinate,
-                    span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)
+                    center: mapItem.placemark.coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
                 ))
 
             }
+            
         }
     }
-    
-    func addMemoryAtCurrentLocation() {
-        let centerCoordinate = getCurrentMapCenter()
-        newPinCoordinate = centerCoordinate
-        showingAddMemory = true
-    }
-    
-    func addFoodMemoryAt(tapLocation: CGPoint) {
-        let centerCoordinate = getCurrentMapCenter()
 
-        newPinCoordinate = centerCoordinate
-        showingAddMemory = true
+    func centerMapOnUserLocation() {
+        if let userLocation = locationManager.location?.coordinate {
+            withAnimation(.easeInOut) {
+                position = .region(MKCoordinateRegion(
+                    center: userLocation,
+                    span: MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)
+                ))
+            }
+        } else {
+            print("User location not available.")
+           
+        }
+
     }
     
-    func getCurrentMapCenter() -> CLLocationCoordinate2D {
-        return position.region?.center ?? CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
+    func addMemoryAtCurrentMapCenter() {
+        if let currentCenter = position.region?.center {
+            newPinCoordinate = currentCenter
+            showingAddMemory = true
+        } else {
+           
+            newPinCoordinate = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
+            showingAddMemory = true
+        }
     }
 }
 
+// MARK: - AddMemoryView
 struct AddMemoryView: View {
     let coordinate: CLLocationCoordinate2D
     let onSave: (FoodMemory) -> Void
@@ -385,6 +464,7 @@ struct AddMemoryView: View {
     }
 }
 
+// MARK: - MemoryDetailView
 struct MemoryDetailView: View {
     let memory: FoodMemory
     let onDelete: () -> Void
@@ -469,6 +549,7 @@ struct MemoryDetailView: View {
     }
 
 
+// MARK: - ImagePicker
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     
