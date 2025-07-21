@@ -11,7 +11,7 @@ import FirebaseFirestore // Keep for Day 2
 import FirebaseStorage // Keep for Day 2
 import CoreLocation // New import for CLLocationManager
 
-// MARK: - FoodMemory Struct (No Change)
+// MARK: - FoodMemory Struct
 struct FoodMemory: Identifiable {
     let id: UUID
     var coordinate: CLLocationCoordinate2D
@@ -42,7 +42,7 @@ struct FoodMemory: Identifiable {
     }
 }
 
-// MARK: - MemoryManager Class (No Change for Day 1, will change for Day 2 with Firebase)
+// MARK: - MemoryManager Class
 class MemoryManager: ObservableObject {
     @Published var foodMemories: [FoodMemory] = []
     
@@ -124,7 +124,7 @@ class MemoryManager: ObservableObject {
     }
 }
 
-// MARK: - LocationManager Class (NEW)
+// MARK: - LocationManager Class
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var location: CLLocation?
     @Published var authorizationStatus: CLAuthorizationStatus?
@@ -345,7 +345,7 @@ struct ContentView: View {
     }
 }
 
-// MARK: - AddMemoryView (No significant change for Day 1, still using coordinate)
+// MARK: - AddMemoryView
 struct AddMemoryView: View {
     let coordinate: CLLocationCoordinate2D
     let onSave: (FoodMemory) -> Void
@@ -455,7 +455,7 @@ struct AddMemoryView: View {
     }
 }
 
-// MARK: - MemoryDetailView (No Change)
+// MARK: - MemoryDetailView
 struct MemoryDetailView: View {
     let memory: FoodMemory
     let onDelete: () -> Void
@@ -538,7 +538,7 @@ struct MemoryDetailView: View {
     }
 }
 
-// MARK: - ImagePicker (No Change)
+// MARK: - ImagePicker
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     
