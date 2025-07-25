@@ -537,6 +537,7 @@ struct MemoryDetailView: View {
         return formatter
         // beed
         // need tjieos
+        // another comment
     }
 }
 
