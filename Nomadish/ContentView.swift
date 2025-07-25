@@ -539,6 +539,7 @@ struct MemoryDetailView: View {
         // need tjieos
         // another comment
         // another one
+        // api??
     }
 }
 
