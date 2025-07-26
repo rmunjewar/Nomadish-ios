@@ -535,11 +535,6 @@ struct MemoryDetailView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter
-        // beed
-        // need tjieos
-        // another comment
-        // another one
-        // api??
     }
 }
 
