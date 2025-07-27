@@ -22,7 +22,6 @@ struct FoodMemory: Identifiable {
     var rating: Int
     
     init(coordinate: CLLocationCoordinate2D, name: String, photo: UIImage?, dateAdded: Date, notes: String = "", rating: Int = 3) {
-
         self.id = UUID()
         self.coordinate = coordinate
         self.name = name
@@ -189,7 +188,7 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            VStack() {
                 HStack {
                     TextField("Have a place in mind?", text: $searchText)
                         .padding(12)
@@ -242,7 +241,6 @@ struct ContentView: View {
                     }
                 }
             }
-
             .navigationTitle("Nomadish")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -258,7 +256,6 @@ struct ContentView: View {
                         addMemoryAtCurrentMapCenter()
                     }) {
                         Image(systemName: "plus")
-
                     }
                 }
             }
@@ -317,12 +314,11 @@ struct ContentView: View {
                     center: mapItem.placemark.coordinate,
                     span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
                 ))
-
             }
             
         }
     }
-
+    
     func centerMapOnUserLocation() {
         if let userLocation = locationManager.location?.coordinate {
             withAnimation(.easeInOut) {
@@ -335,7 +331,6 @@ struct ContentView: View {
             print("User location not available.")
            
         }
-
     }
     
     func addMemoryAtCurrentMapCenter() {
@@ -359,7 +354,6 @@ struct AddMemoryView: View {
     @State private var memoryName = ""
     @State private var notes = ""
     @State private var rating = 3
-
     @State private var selectedPhoto: UIImage?
     @State private var showingImagePicker = false
     
@@ -370,7 +364,6 @@ struct AddMemoryView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                 
-
                 Button(action: {
                     showingImagePicker = true
                 }) {
@@ -403,7 +396,7 @@ struct AddMemoryView: View {
                 TextField("Notes (optional)", text: $notes)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
-
+                
                 VStack {
                     Text("Rating")
                         .font(.headline)
@@ -420,7 +413,6 @@ struct AddMemoryView: View {
                     }
                 }
                 
-
                 Text("Location: \(coordinate.latitude, specifier: "%.4f"), \(coordinate.longitude, specifier: "%.4f")")
                     .font(.caption)
                     .foregroundColor(.gray)
@@ -444,7 +436,7 @@ struct AddMemoryView: View {
                                 dateAdded: Date(),
                                 notes: notes,
                                 rating: rating
-            )
+                            )
                             onSave(memory)
                         }
                     }
@@ -456,7 +448,6 @@ struct AddMemoryView: View {
             .padding()
             .navigationTitle("New Memory")
             .navigationBarTitleDisplayMode(.inline)
-
             .sheet(isPresented: $showingImagePicker) {
                 ImagePicker(image: $selectedPhoto)
             }
@@ -493,7 +484,6 @@ struct MemoryDetailView: View {
                     ForEach(1...5, id: \.self) { star in
                         Image(systemName: star <= memory.rating ? "star.fill" : "star")
                             .foregroundColor(star <= memory.rating ? .yellow : .gray)
-
                     }
                 }
                 
@@ -523,7 +513,6 @@ struct MemoryDetailView: View {
                     Button("Delete") {
                         onDelete()
                     }
-
                     .foregroundColor(.red)
                     
                     Spacer()
@@ -547,7 +536,7 @@ struct MemoryDetailView: View {
         formatter.timeStyle = .short
         return formatter
     }
-
+}
 
 // MARK: - ImagePicker
 struct ImagePicker: UIViewControllerRepresentable {
@@ -581,7 +570,6 @@ struct ImagePicker: UIViewControllerRepresentable {
         }
     }
 }
-
 
 #Preview {
     ContentView()
