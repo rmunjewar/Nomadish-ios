@@ -535,6 +535,8 @@ struct MemoryDetailView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter
+        
+        // adding a ocmment
     }
 }
 
