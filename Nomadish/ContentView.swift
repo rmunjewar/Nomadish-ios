@@ -21,6 +21,7 @@ struct FoodMemory: Identifiable {
     var notes: String
     var rating: Int
     // comment
+    // another commemt
     
     init(coordinate: CLLocationCoordinate2D, name: String, photo: UIImage?, dateAdded: Date, notes: String = "", rating: Int = 3) {
         self.id = UUID()
