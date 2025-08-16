@@ -20,6 +20,10 @@ struct FoodMemory: Identifiable {
     var dateAdded: Date
     var notes: String
     var rating: Int
+    // comment
+    // another commemt
+    // one more comment
+    // another ocmment
     
     init(coordinate: CLLocationCoordinate2D, name: String, photo: UIImage?, dateAdded: Date, notes: String = "", rating: Int = 3) {
         self.id = UUID()
@@ -119,6 +123,7 @@ class MemoryManager: ObservableObject {
                 dateAdded: dateAdded,
                 notes: notes,
                 rating: rating
+                // need to add some more stuff
             )
         }
     }
@@ -535,6 +540,12 @@ struct MemoryDetailView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter
+        
+        // adding a ocmment
+        // testing a comment
+        // another tes
+        // one more comment
+        // another ocmment
     }
 }
 
