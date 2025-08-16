@@ -123,6 +123,7 @@ class MemoryManager: ObservableObject {
                 dateAdded: dateAdded,
                 notes: notes,
                 rating: rating
+                // need to add some more stuff
             )
         }
     }
