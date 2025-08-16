@@ -15,12 +15,14 @@ struct FoodMemory: Identifiable, Codable, Equatable {
     var dateAdded: Date
     var notes: String
     var rating: Int
+    var imageUrl: URL?
     
     var photo: UIImage?
     var coordinate: CLLocationCoordinate2D
     
     enum CodingKeys: String, CodingKey {
         case id, name, dateAdded, notes, rating, latitude, longitude
+        case imageURL
     }
     
     init(id: String = UUID().uuidString, name: String, dateAdded: Date, notes: String, rating: Int, photo: UIImage?, coordinate: CLLocationCoordinate2D) {

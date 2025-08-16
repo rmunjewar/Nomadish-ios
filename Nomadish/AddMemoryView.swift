@@ -10,9 +10,9 @@ import CoreLocation
 
 struct AddMemoryView: View {
     let coordinate: CLLocationCoordinate2D
-    let onSave: (FoodMemory) -> Void
+    let onSave: (FoodMemory, UIImage?) -> Void
     let onCancel: () -> Void
-        @State private var memoryName = ""
+    @State private var memoryName = ""
     @State private var notes = ""
     @State private var rating = 3
     @State private var selectedPhoto: UIImage?
@@ -124,6 +124,6 @@ struct AddMemoryView: View {
             photo: selectedPhoto,
             coordinate: coordinate
         )
-        onSave(newMemory)
+        onSave(newMemory, selectedPhoto)
     }
 }
