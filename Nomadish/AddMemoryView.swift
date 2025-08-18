@@ -123,6 +123,7 @@ struct AddMemoryView: View {
             rating: rating,
             photo: selectedPhoto,
             coordinate: coordinate
+            // change
         )
         onSave(newMemory, selectedPhoto)
     }
