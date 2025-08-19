@@ -13,17 +13,16 @@ import SwiftUI
 class MemoriesViewModel: ObservableObject {
     
     @Published var foodMemories: [FoodMemory] = []
-        @Published var isLoading: Bool = false
-        
-        private let apiService: APIService
-        private let persistenceService: PersistenceService
-        
-        init(apiService: APIService = APIService(), persistenceService: PersistenceService = PersistenceService()) {
-            self.apiService = apiService
-            self.persistenceService = persistenceService
-            self.foodMemories = persistenceService.loadMemories()
-        }
-
+    @Published var isLoading: Bool = false
+    
+    private let apiService: APIService
+    private let persistenceService: PersistenceService
+    
+    init(apiService: APIService = APIService(), persistenceService: PersistenceService = PersistenceService()) {
+        self.apiService = apiService
+        self.persistenceService = persistenceService
+        self.foodMemories = persistenceService.loadMemories()
+    }
     
     /// Fetches the latest memories from the server and updates the local cache.
     func fetchMemories() async {
@@ -38,16 +37,17 @@ class MemoriesViewModel: ObservableObject {
             persistenceService.saveMemories(memories)
         case .failure(let error):
             // In a real app, you would show an error alert to the user.
-            print("Error fetching memories: \(error.localizedDescription)")
+            print("Error fetching memories: \(error)")
+            // For now, use cached data if available
         }
         
         isLoading = false
     }
     
     /// Adds a new memory by sending it to the server and updating the local state.
-    func addMemory(_ memory: FoodMemory) async {
+    func addMemory(_ memory: FoodMemory, photo: UIImage) async {
         isLoading = true
-        let result = await apiService.addMemory(memory, photo: <#UIImage#>)
+        let result = await apiService.addMemory(memory, photo: photo)
         
         switch result {
         case .success(let savedMemory):
@@ -56,7 +56,10 @@ class MemoriesViewModel: ObservableObject {
             // Update the local cache.
             persistenceService.saveMemories(foodMemories)
         case .failure(let error):
-            print("Error adding memory: \(error.localizedDescription)")
+            print("Error adding memory: \(error)")
+            // If server fails, add to local cache for now
+            foodMemories.append(memory)
+            persistenceService.saveMemories(foodMemories)
         }
         
         isLoading = false
@@ -67,7 +70,7 @@ class MemoriesViewModel: ObservableObject {
         let error = await apiService.deleteMemory(withId: memory.id)
         
         if let error = error {
-            print("Error deleting memory: \(error.localizedDescription)")
+            print("Error deleting memory: \(error)")
         } else {
             // If the server deletion was successful, remove it from our local array.
             foodMemories.removeAll { $0.id == memory.id }

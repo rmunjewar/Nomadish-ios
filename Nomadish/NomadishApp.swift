@@ -21,11 +21,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct NomadishApp: App {
     // Register the delegate
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
+    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
 
     var body: some Scene {
         WindowGroup {
-            NavigationView {
+            if hasSeenWelcome {
                 ContentView()
+            } else {
+                WelcomeView(hasSeenWelcome: $hasSeenWelcome)
+                    .transition(.opacity)
             }
         }
     }
