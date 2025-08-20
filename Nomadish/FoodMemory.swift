@@ -15,14 +15,14 @@ struct FoodMemory: Identifiable, Codable, Equatable {
     var dateAdded: Date
     var notes: String
     var rating: Int
-    var imageUrl: String? // Changed from URL? to String?
+    var imageUrl: String?
     
-    var photo: UIImage? // This won't be encoded/decoded
+    var photo: UIImage?
     var coordinate: CLLocationCoordinate2D
     
     enum CodingKeys: String, CodingKey {
         case id, name, dateAdded = "date_added", notes, rating, latitude, longitude
-        case imageUrl = "image_url" // Match snake_case from server
+        case imageUrl = "image_url"
     }
     
     init(id: String = UUID().uuidString, name: String, dateAdded: Date, notes: String, rating: Int, photo: UIImage?, coordinate: CLLocationCoordinate2D) {
@@ -36,7 +36,6 @@ struct FoodMemory: Identifiable, Codable, Equatable {
         self.imageUrl = nil
     }
     
-    // Custom decoder to handle converting lat/long from JSON to Coordinate2D
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
@@ -50,7 +49,7 @@ struct FoodMemory: Identifiable, Codable, Equatable {
         let longitude = try container.decode(Double.self, forKey: .longitude)
         coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
         
-        photo = nil // Photos will be loaded separately if needed
+        photo = nil
     }
     
     func encode(to encoder: Encoder) throws {
@@ -70,7 +69,6 @@ struct FoodMemory: Identifiable, Codable, Equatable {
     }
 }
 
-// Extension to make CLLocationCoordinate2D Codable
 extension CLLocationCoordinate2D: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.unkeyedContainer()

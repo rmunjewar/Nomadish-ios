@@ -17,7 +17,6 @@ struct ContentView: View {
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     )
         
-    // Use the new ViewModel instead of MemoryManager
     @StateObject private var viewModel = MemoriesViewModel()
     @StateObject private var locationManager = LocationManager()
     
@@ -41,11 +40,8 @@ struct ContentView: View {
         )
     }
 
-    // MARK: - Body
-    
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Map Tab
             mapTab
                 .tabItem {
                     Image(systemName: "map.fill")
@@ -53,7 +49,6 @@ struct ContentView: View {
                 }
                 .tag(0)
             
-            // Memories Tab
             memoriesTab
                 .tabItem {
                     Image(systemName: "heart.fill")
@@ -61,7 +56,6 @@ struct ContentView: View {
                 }
                 .tag(1)
             
-            // Stats Tab
             statsTab
                 .tabItem {
                     Image(systemName: "chart.bar.fill")
@@ -105,38 +99,92 @@ struct ContentView: View {
         }
     }
     
-    // MARK: - Map Tab
-    
     private var mapTab: some View {
         NavigationStack {
             ZStack {
+                MapReader { proxy in
+                    Map(position: $position, interactionModes: .all) {
+                        UserAnnotation()
+                        
+                        ForEach(viewModel.foodMemories) { memory in
+                            Annotation(memory.name, coordinate: memory.coordinate) {
+                                Button(action: { selectedMemory = memory }) {
+                                    VStack(spacing: 2) {
+                                        Image(systemName: "fork.knife.circle.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.white)
+                                            .background(Color.purple)
+                                            .clipShape(Circle())
+                                            .shadow(radius: 3)
+                                        
+                                        if !memory.name.isEmpty && memory.name.count < 20 {
+                                            Text(memory.name)
+                                                .font(.caption2)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.black)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 3)
+                                                .background(.white.opacity(0.95))
+                                                .cornerRadius(6)
+                                                .shadow(radius: 1)
+                                                .lineLimit(1)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .mapStyle(.standard(elevation: .realistic))
+                    .onTapGesture { screenCoord in
+                        if let mapCoord = proxy.convert(screenCoord, from: .local) {
+                            newPinCoordinate = mapCoord
+                            isShowingAddMemorySheet = true
+                        }
+                    }
+                    .onMapCameraChange { context in
+                        mapRegion = context.region
+                    }
+                }
+                .ignoresSafeArea(.all, edges: .all)
+                
                 VStack(spacing: 0) {
-                    // Enhanced Search Bar with Results
                     VStack(spacing: 0) {
+                        Spacer()
+                            .frame(height: 10)
+                        
                         HStack {
                             HStack {
                                 Image(systemName: "magnifyingglass")
                                     .foregroundColor(.gray)
+                                    .font(.system(size: 16))
                                 TextField("Search for restaurants, cafes...", text: $searchText)
+                                    .font(.system(size: 16))
                                     .onChange(of: searchText) { _ in
                                         if searchText.count > 2 {
-                                            searchForLocation()
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                if searchText.count > 2 {
+                                                    searchForLocation()
+                                                }
+                                            }
+                                        } else {
+                                            searchResults.removeAll()
                                         }
                                     }
                                 if !searchText.isEmpty {
                                     Button(action: { searchText = "" }) {
                                         Image(systemName: "xmark.circle.fill")
                                             .foregroundColor(.gray)
+                                            .font(.system(size: 16))
                                     }
                                 }
                             }
-                            .padding(12)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(15)
+                            .padding(10)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(12)
+                            .shadow(radius: 2)
                         }
                         .padding(.horizontal)
                         
-                        // Search Results Dropdown
                         if !searchResults.isEmpty && !searchText.isEmpty {
                             ScrollView {
                                 LazyVStack(spacing: 0) {
@@ -145,9 +193,9 @@ struct ContentView: View {
                                             selectSearchResult(item)
                                         }) {
                                             HStack {
-                                                VStack(alignment: .leading, spacing: 4) {
+                                                VStack(alignment: .leading, spacing: 2) {
                                                     Text(item.name ?? "Unknown Location")
-                                                        .font(.headline)
+                                                        .font(.subheadline)
                                                         .foregroundColor(.primary)
                                                     if let locality = item.placemark.locality {
                                                         Text(locality)
@@ -158,114 +206,76 @@ struct ContentView: View {
                                                 Spacer()
                                                 Image(systemName: "location.fill")
                                                     .foregroundColor(.blue)
+                                                    .font(.caption)
                                             }
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 12)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
                                         }
                                         .buttonStyle(.plain)
                                         .background(Color(.systemBackground))
                                         
                                         if item != searchResults.last {
                                             Divider()
-                                                .padding(.leading, 16)
+                                                .padding(.leading, 12)
                                         }
                                     }
                                 }
                             }
                             .background(Color(.systemBackground))
-                            .cornerRadius(15)
-                            .shadow(radius: 5)
+                            .cornerRadius(12)
+                            .shadow(radius: 3)
                             .padding(.horizontal)
-                            .frame(maxHeight: 200)
+                            .frame(maxHeight: 150)
                         }
                     }
-                    .background(Color(.systemBackground))
+                    .background(Color.clear)
                     .zIndex(1)
                     
-                    // Enhanced Map View
-                    MapReader { proxy in
-                        Map(position: $position, interactionModes: .all) {
-                            UserAnnotation()
-                            
-                            ForEach(viewModel.foodMemories) { memory in
-                                Annotation(memory.name, coordinate: memory.coordinate) {
-                                    Button(action: { selectedMemory = memory }) {
-                                        VStack(spacing: 2) {
-                                            Image(systemName: "fork.knife.circle.fill")
-                                                .font(.title2)
-                                                .foregroundColor(.white)
-                                                .background(Color.purple)
-                                                .clipShape(Circle())
-                                                .shadow(radius: 3)
-                                            Text(memory.name)
-                                                .font(.caption2).bold()
-                                                .foregroundColor(.black)
-                                                .padding(4)
-                                                .background(.white.opacity(0.9))
-                                                .cornerRadius(8)
-                                                .shadow(radius: 1)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .mapStyle(.standard(elevation: .realistic))
-                        .onTapGesture { screenCoord in
-                            if let mapCoord = proxy.convert(screenCoord, from: .local) {
-                                newPinCoordinate = mapCoord
-                                isShowingAddMemorySheet = true
-                            }
-                        }
-                        .onMapCameraChange { context in
-                            mapRegion = context.region
-                        }
-                    }
+                    Spacer()
                     
-                    // Map Control Buttons
-                    VStack {
-                        HStack {
-                            Spacer()
-                            VStack(spacing: 12) {
-                                // Zoom In Button
-                                Button(action: zoomIn) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.white)
-                                        .frame(width: 44, height: 44)
-                                        .background(Color.blue)
-                                        .clipShape(Circle())
-                                        .shadow(radius: 3)
-                                }
-                                
-                                // Zoom Out Button
-                                Button(action: zoomOut) {
-                                    Image(systemName: "minus.circle.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.white)
-                                        .frame(width: 44, height: 44)
-                                        .background(Color.blue)
-                                        .clipShape(Circle())
-                                        .shadow(radius: 3)
-                                }
-                                
-                                // Center on User Button
-                                Button(action: centerMapOnUserLocation) {
-                                    Image(systemName: "location.fill")
-                                        .font(.title2)
-                                        .foregroundColor(.white)
-                                        .frame(width: 44, height: 44)
-                                        .background(Color.green)
-                                        .clipShape(Circle())
-                                        .shadow(radius: 3)
-                                }
-                            }
-                            .padding(.trailing, 16)
-                        }
+                    HStack {
                         Spacer()
+                        VStack(spacing: 12) {
+                            Button(action: zoomIn) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.blue)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 3)
+                            }
+                            
+                            Button(action: zoomOut) {
+                                Image(systemName: "minus.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.blue)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 3)
+                            }
+                            
+                            Button(action: centerMapOnUserLocation) {
+                                Image(systemName: "location.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.green)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 3)
+                            }
+                        }
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 100)
+                    }
+                }
+                .onTapGesture {
+                    if !searchResults.isEmpty {
+                        searchResults.removeAll()
                     }
                 }
                 
-                // Show a loading overlay when the ViewModel is busy
                 if viewModel.isLoading {
                     Color.black.opacity(0.4).ignoresSafeArea()
                     ProgressView("Working...")
@@ -300,8 +310,6 @@ struct ContentView: View {
         }
     }
     
-    // MARK: - Memories Tab
-    
     private var memoriesTab: some View {
         NavigationStack {
             List {
@@ -323,8 +331,6 @@ struct ContentView: View {
         }
     }
     
-    // MARK: - Stats Tab
-    
     private var statsTab: some View {
         NavigationStack {
             StatsView(memories: viewModel.foodMemories)
@@ -332,8 +338,6 @@ struct ContentView: View {
                 .navigationBarTitleDisplayMode(.inline)
         }
     }
-    
-    // MARK: - Functions
     
     private func searchForLocation() {
         guard !searchText.isEmpty else { return }
@@ -396,15 +400,12 @@ struct ContentView: View {
         }
     }
     
-    /// Animates the map back to the user's current location.
     private func centerMapOnUserLocation() {
         withAnimation(.easeInOut(duration: 0.5)) {
             position = .userLocation(fallback: .automatic)
         }
     }
 }
-
-// MARK: - Memory Row View
 
 struct MemoryRowView: View {
     let memory: FoodMemory
@@ -413,7 +414,6 @@ struct MemoryRowView: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // Photo thumbnail
                 if let photo = memory.photo {
                     Image(uiImage: photo)
                         .resizable()
@@ -431,7 +431,6 @@ struct MemoryRowView: View {
                         )
                 }
                 
-                // Memory details
                 VStack(alignment: .leading, spacing: 4) {
                     Text(memory.name)
                         .font(.headline)
@@ -446,22 +445,21 @@ struct MemoryRowView: View {
                             Image(systemName: star <= memory.rating ? "star.fill" : "star")
                                 .font(.caption2)
                                 .foregroundColor(star <= memory.rating ? .yellow : .gray)
-                            }
                         }
                     }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
-                .padding(.vertical, 4)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            .buttonStyle(.plain)
+            .padding(.vertical, 4)
         }
+        .buttonStyle(.plain)
     }
-
+}
 
 #Preview {
     ContentView()

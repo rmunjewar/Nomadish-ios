@@ -9,16 +9,12 @@ struct StatsView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Overview Cards
                     overviewSection
                     
-                    // Rating Distribution
                     ratingChartSection
                     
-                    // Recent Memories
                     recentMemoriesSection
                     
-                    // Location Stats
                     locationStatsSection
                 }
                 .padding(.horizontal, 20)

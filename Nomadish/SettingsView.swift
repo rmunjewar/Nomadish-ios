@@ -10,7 +10,6 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
-                // App Information Section
                 Section {
                     HStack {
                         Image(systemName: "fork.knife.circle.fill")
@@ -29,14 +28,12 @@ struct SettingsView: View {
                     .padding(.vertical, 8)
                 }
                 
-                // Preferences Section
                 Section("Preferences") {
                     Toggle("Use Metric System", isOn: $useMetricSystem)
                     Toggle("Enable Notifications", isOn: $enableNotifications)
                     Toggle("Auto-classify Photos", isOn: $autoClassifyPhotos)
                 }
                 
-                // Map Settings Section
                 Section("Map") {
                     NavigationLink(destination: MapSettingsView()) {
                         Label("Map Settings", systemImage: "map")
@@ -47,7 +44,6 @@ struct SettingsView: View {
                     }
                 }
                 
-                // Help & Support Section
                 Section("Help & Support") {
                     Button(action: showTutorial) {
                         Label("Show Tutorial", systemImage: "questionmark.circle")
@@ -68,7 +64,6 @@ struct SettingsView: View {
                     }
                 }
                 
-                // Account Section
                 Section("Account") {
                     Button(action: resetApp) {
                         Label("Reset App", systemImage: "arrow.clockwise")
@@ -93,24 +88,19 @@ struct SettingsView: View {
         }
     }
     
-    // MARK: - Actions
-    
     private func showTutorial() {
         hasSeenWelcome = false
         dismiss()
     }
     
     private func contactSupport() {
-        // In a real app, this would open email or support chat
         if let url = URL(string: "mailto:support@nomadish.app") {
             UIApplication.shared.open(url)
         }
     }
     
     private func resetApp() {
-        // Show confirmation alert in a real app
         hasSeenWelcome = false
-        // Reset other app storage values
         useMetricSystem = false
         enableNotifications = true
         autoClassifyPhotos = true
@@ -118,12 +108,9 @@ struct SettingsView: View {
     }
     
     private func signOut() {
-        // Handle sign out logic
         dismiss()
     }
 }
-
-// MARK: - Map Settings View
 
 struct MapSettingsView: View {
     @AppStorage("defaultMapType") private var defaultMapType = 0
@@ -156,8 +143,6 @@ struct MapSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
-
-// MARK: - Privacy Settings View
 
 struct PrivacySettingsView: View {
     @AppStorage("shareLocation") private var shareLocation = false

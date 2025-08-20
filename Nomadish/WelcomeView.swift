@@ -56,9 +56,7 @@ struct WelcomeView: View {
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 .animation(.easeInOut, value: currentPage)
                 
-                // Bottom controls
                 VStack(spacing: 20) {
-                    // Page indicators
                     HStack(spacing: 8) {
                         ForEach(0..<welcomePages.count, id: \.self) { index in
                             Circle()
@@ -68,7 +66,6 @@ struct WelcomeView: View {
                         }
                     }
                     
-                    // Navigation buttons
                     HStack(spacing: 16) {
                         if currentPage > 0 {
                             Button("Previous") {

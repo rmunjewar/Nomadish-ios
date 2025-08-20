@@ -9,14 +9,11 @@ import Foundation
 /// A service responsible for saving and loading food memories locally.
 class PersistenceService {
     
-    // A key to identify the saved data in UserDefaults.
     private let memoriesKey = "FoodMemoriesCache"
     
-    /// Loads the array of `FoodMemory` from UserDefaults.
-    /// - Returns: An array of `FoodMemory` objects, or an empty array if none are found or an error occurs.
     func loadMemories() -> [FoodMemory] {
         guard let data = UserDefaults.standard.data(forKey: memoriesKey) else {
-            return [] // No data saved yet
+            return []
         }
         
         do {
@@ -28,9 +25,6 @@ class PersistenceService {
             return []
         }
     }
-    
-    /// Saves an array of `FoodMemory` to UserDefaults.
-    /// - Parameter memories: The array of `FoodMemory` objects to save.
     func saveMemories(_ memories: [FoodMemory]) {
         do {
             let encoder = JSONEncoder()

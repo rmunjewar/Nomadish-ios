@@ -1,10 +1,3 @@
-//
-//  AddMemoryView.swift
-//  Nomadish
-//
-//  Created by Riddhi Munjewar on 8/15/25.
-//
-
 import SwiftUI
 import CoreLocation
 
@@ -22,26 +15,18 @@ struct AddMemoryView: View {
     @State private var isClassifying = false
     @State private var showingLocationAlert = false
     @State private var locationName = ""
+    @State private var classificationResult: ClassificationResult?
     
-    private let foodClassifier = FoodClassifier()
+    @StateObject private var foodClassifier = FoodClassifier()
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Photo Section
                     photoSection
-                    
-                    // Details Section
                     detailsSection
-                    
-                    // Rating Section
                     ratingSection
-                    
-                    // Location Preview
                     locationPreviewSection
-                    
-                    // Save Button
                     saveButton
                 }
                 .padding(.horizontal, 20)
@@ -60,16 +45,26 @@ struct AddMemoryView: View {
                 ImagePicker(image: $selectedPhoto)
             }
             .onChange(of: selectedPhoto) { newPhoto in
-                guard let photo = newPhoto else { return }
-                classifyImage(photo)
+                if let photo = newPhoto {
+                    memoryName = ""
+                    classificationResult = nil
+                    foodClassifier.reset()
+                    foodClassifier.classify(image: photo) { result in
+                        self.classificationResult = result
+                        if let result = result {
+                            self.memoryName = result.name
+                        }
+                    }
+                } else {
+                    memoryName = ""
+                    classificationResult = nil
+                }
             }
             .task {
                 await getLocationName()
             }
         }
     }
-    
-    // MARK: - View Components
     
     private var photoSection: some View {
         VStack(spacing: 16) {
@@ -110,7 +105,7 @@ struct AddMemoryView: View {
                             )
                     }
                     
-                    if isClassifying {
+                    if foodClassifier.isClassifying {
                         RoundedRectangle(cornerRadius: 16)
                             .fill(Color.black.opacity(0.7))
                             .frame(height: 250)
@@ -119,15 +114,91 @@ struct AddMemoryView: View {
                                     ProgressView()
                                         .tint(.white)
                                         .scaleEffect(1.5)
-                                    Text("Identifying dish...")
+                                    Text("Analyzing food...")
                                         .font(.headline)
                                         .foregroundColor(.white)
+                                    Text("Using AI to identify your dish")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.8))
                                 }
                             )
                     }
                 }
             }
             .buttonStyle(.plain)
+            
+            if let result = classificationResult {
+                VStack(spacing: 12) {
+                    HStack {
+                        Image(systemName: "brain.head.profile")
+                            .foregroundColor(.purple)
+                        Text("AI Analysis Results")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                    
+                    VStack(spacing: 8) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(result.name)
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                                
+                                Text(result.description)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("\(Int(result.confidence * 100))%")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(confidenceColor(result.confidence))
+                                
+                                Text(foodClassifier.getConfidenceDescription(result.confidence))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        
+                        if !result.alternatives.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Alternative suggestions:")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                HStack(spacing: 8) {
+                                    ForEach(result.alternatives, id: \.self) { alternative in
+                                        Button(action: {
+                                            memoryName = alternative
+                                        }) {
+                                            Text(alternative)
+                                                .font(.caption)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Color.blue.opacity(0.1))
+                                                .foregroundColor(.blue)
+                                                .cornerRadius(8)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(16)
+                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                }
+            }
             
             if let photo = selectedPhoto {
                 HStack {
@@ -261,8 +332,6 @@ struct AddMemoryView: View {
         .padding(.top, 8)
     }
     
-    // MARK: - Computed Properties
-    
     private var canSave: Bool {
         !memoryName.isEmpty && selectedPhoto != nil
     }
@@ -278,17 +347,13 @@ struct AddMemoryView: View {
         }
     }
     
-    // MARK: - Functions
-    
-    private func classifyImage(_ image: UIImage) {
-        isClassifying = true
-        foodClassifier.classify(image: image) { result in
-            isClassifying = false
-            if let prediction = result {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    self.memoryName = prediction
-                }
-            }
+    private func confidenceColor(_ confidence: Double) -> Color {
+        if confidence > 0.8 {
+            return .green
+        } else if confidence > 0.5 {
+            return .orange
+        } else {
+            return .red
         }
     }
     

@@ -110,15 +110,13 @@ struct MemoryDetailView: View {
                 placeholderView
             }
             
-            // Dish Name Overlay
             VStack(spacing: 8) {
                 Text(memory.name)
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                
-                // Rating Stars
+          
                 HStack(spacing: 4) {
                     ForEach(1...5, id: \.self) { star in
                         Image(systemName: star <= memory.rating ? "star.fill" : "star")

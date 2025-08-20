@@ -8,9 +8,6 @@
 import SwiftUI
 import CoreLocation
 
-// Define the base URL for your local server.
-// Use 127.0.0.1 for the simulator. If running on a real device,
-// you must use your computer's local network IP address (e.g., http://192.168.1.10:8000).
 let baseURL = "http://127.0.0.1:8000"
 
 enum APIError: Error, LocalizedError {
@@ -35,12 +32,9 @@ enum APIError: Error, LocalizedError {
 
 class APIService {
 
-    // You'll need a JSON decoder that can handle the date format from Python.
     private var jsonDecoder: JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase // Handles python_case to swiftCase
-        
-        // Custom date decoder for ISO8601 format
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
         let customFormatter = DateFormatter()
         customFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
         customFormatter.locale = Locale(identifier: "en_US_POSIX")
@@ -52,17 +46,14 @@ class APIService {
             let container = try decoder.singleValueContainer()
             let dateString = try container.decode(String.self)
             
-            // Try ISO8601 format first
             if let date = isoFormatter.date(from: dateString) {
                 return date
             }
             
-            // Try custom format
             if let date = customFormatter.date(from: dateString) {
                 return date
             }
             
-            // Try without microseconds
             customFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
             if let date = customFormatter.date(from: dateString) {
                 return date
@@ -74,7 +65,6 @@ class APIService {
         return decoder
     }
     
-    // FETCH (GET Request)
     func fetchMemories() async -> Result<[FoodMemory], APIError> {
         guard let url = URL(string: "\(baseURL)/memories") else {
             return .failure(.invalidURL)
@@ -100,7 +90,7 @@ class APIService {
         }
     }
     
-    // ADD (POST Request with Image Upload)
+  
     func addMemory(_ memory: FoodMemory, photo: UIImage) async -> Result<FoodMemory, APIError> {
         guard let url = URL(string: "\(baseURL)/memories") else {
             return .failure(.invalidURL)
@@ -112,15 +102,12 @@ class APIService {
         let boundary = "Boundary-\(UUID().uuidString)"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         
-        // Convert the UIImage to JPEG data
         guard let imageData = photo.jpegData(compressionQuality: 0.8) else {
             return .failure(.requestFailed("Could not convert image to JPEG data."))
         }
         
-        // Create the multipart/form-data body
         var body = Data()
         
-        // Add form fields
         let formFields = [
             "name": memory.name,
             "notes": memory.notes,
@@ -135,14 +122,12 @@ class APIService {
             body.append("\(value)\r\n".data(using: .utf8)!)
         }
         
-        // Add image data
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"image\"; filename=\"photo.jpg\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
         body.append(imageData)
         body.append("\r\n".data(using: .utf8)!)
         
-        // End of body
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         
         do {
@@ -164,7 +149,6 @@ class APIService {
         }
     }
     
-    // DELETE (DELETE Request)
     func deleteMemory(withId memoryId: String) async -> APIError? {
         guard let url = URL(string: "\(baseURL)/memories/\(memoryId)") else {
             return .invalidURL
@@ -180,7 +164,7 @@ class APIService {
             }
             
             if httpResponse.statusCode == 204 {
-                return nil // Success
+                return nil 
             } else {
                 return .requestFailed("Server returned status code \(httpResponse.statusCode)")
             }
