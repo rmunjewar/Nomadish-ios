@@ -12,7 +12,7 @@ A Social Map for Food Memories - Your Personal Culinary Journey Tracker
 - 📝 **Personal Notes**: Add stories and memories to each dish
 - 🗺️ **Interactive Map**: Full MapKit integration with custom controls
 
-### Social Features (Coming Soon)
+### Social Features (In Development)
 
 - 👥 **Friend Following**: See your friends' food trails
 - 🔒 **Privacy Controls**: Choose what to share publicly
