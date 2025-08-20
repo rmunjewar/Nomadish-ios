@@ -8,7 +8,6 @@
 import SwiftUI
 import FirebaseCore
 
-// AppDelegate class to configure Firebase
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
@@ -19,13 +18,17 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 @main
 struct NomadishApp: App {
-    // Register the delegate
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
+    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
 
     var body: some Scene {
         WindowGroup {
-            NavigationView {
+            if hasSeenWelcome {
                 ContentView()
+            } else {
+                WelcomeView(hasSeenWelcome: $hasSeenWelcome)
+                    .transition(.opacity)
             }
         }
     }

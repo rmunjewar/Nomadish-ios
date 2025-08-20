@@ -12,17 +12,24 @@ import MapKit
 struct ContentView: View {
     
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var mapRegion = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
+        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+    )
         
-    // Use the new ViewModel instead of MemoryManager
     @StateObject private var viewModel = MemoriesViewModel()
     @StateObject private var locationManager = LocationManager()
     
     @State private var selectedMemory: FoodMemory?
     @State private var newPinCoordinate: CLLocationCoordinate2D?
     @State private var isShowingAddMemorySheet = false
+    @State private var isShowingSettings = false
+    @State private var selectedTab = 0
     
     @State private var searchText = ""
     @State private var showingSearchAlert = false
+    @State private var searchResults: [MKMapItem] = []
+    @State private var isSearching = false
     
     private var isShowingMemoryDetailSheet: Binding<Bool> {
         Binding(
@@ -33,60 +40,242 @@ struct ContentView: View {
         )
     }
 
-    // MARK: - Body
-    
     var body: some View {
-        NavigationStack {
-            ZStack { // Use a ZStack to overlay the loading view
-                VStack(spacing: 0) {
-                    // Search Bar (no changes)
-                    HStack {
-                        TextField("Search for a place...", text: $searchText)
-                            .padding(12)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
-                            .onSubmit(searchForLocation)
+        TabView(selection: $selectedTab) {
+            mapTab
+                .tabItem {
+                    Image(systemName: "map.fill")
+                    Text("Map")
+                }
+                .tag(0)
+            
+            memoriesTab
+                .tabItem {
+                    Image(systemName: "heart.fill")
+                    Text("Memories")
+                }
+                .tag(1)
+            
+            statsTab
+                .tabItem {
+                    Image(systemName: "chart.bar.fill")
+                    Text("Stats")
+                }
+                .tag(2)
+        }
+        .accentColor(.purple)
+        .sheet(isPresented: $isShowingAddMemorySheet) {
+            if let coordinate = newPinCoordinate {
+                AddMemoryView(
+                    coordinate: coordinate,
+                    onSave: { newMemory, photo in
+                        guard let photo = photo else { return }
                         
-                        Button(action: searchForLocation) {
-                            Image(systemName: "magnifyingglass").padding()
+                        Task {
+                            await viewModel.addMemory(newMemory, photo: photo)
                         }
+                        isShowingAddMemorySheet = false
+                    },
+                    onCancel: { isShowingAddMemorySheet = false }
+                )
+            }
+        }
+        .sheet(isPresented: isShowingMemoryDetailSheet) {
+            if let memory = selectedMemory {
+                MemoryDetailView(memory: memory) {
+                    Task {
+                        await viewModel.deleteMemory(memory)
                     }
-                    .padding(.horizontal)
-                    
-                    // The main map view (use viewModel.foodMemories)
-                    MapReader { proxy in
-                        Map(position: $position) {
-                            UserAnnotation()
-                            
-                            ForEach(viewModel.foodMemories) { memory in // Changed here
-                                Annotation(memory.name, coordinate: memory.coordinate) {
-                                    Button(action: { selectedMemory = memory }) {
-                                        VStack(spacing: 2) {
-                                            Image(systemName: "fork.knife.circle.fill")
-                                                .font(.title)
-                                                .foregroundColor(.white)
-                                                .background(Color.purple)
-                                                .clipShape(Circle())
-                                                .shadow(radius: 3)
+                    selectedMemory = nil
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            SettingsView()
+        }
+        .alert("Location Not Found", isPresented: $showingSearchAlert, actions: { Button("OK") {} }, message: { Text("Could not find a location for '\(searchText)'.") })
+        .task {
+            await viewModel.fetchMemories()
+        }
+    }
+    
+    private var mapTab: some View {
+        NavigationStack {
+            ZStack {
+                MapReader { proxy in
+                    Map(position: $position, interactionModes: .all) {
+                        UserAnnotation()
+                        
+                        ForEach(viewModel.foodMemories) { memory in
+                            Annotation(memory.name, coordinate: memory.coordinate) {
+                                Button(action: { selectedMemory = memory }) {
+                                    VStack(spacing: 2) {
+                                        Image(systemName: "fork.knife.circle.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.white)
+                                            .background(Color.purple)
+                                            .clipShape(Circle())
+                                            .shadow(radius: 3)
+                                        
+                                        if !memory.name.isEmpty && memory.name.count < 20 {
                                             Text(memory.name)
-                                                .font(.caption).bold().foregroundColor(.black)
-                                                .padding(4).background(.white.opacity(0.8))
-                                                .cornerRadius(5)
+                                                .font(.caption2)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.black)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 3)
+                                                .background(.white.opacity(0.95))
+                                                .cornerRadius(6)
+                                                .shadow(radius: 1)
+                                                .lineLimit(1)
                                         }
                                     }
                                 }
                             }
                         }
-                        .onTapGesture { screenCoord in
-                            if let mapCoord = proxy.convert(screenCoord, from: .local) {
-                                newPinCoordinate = mapCoord
-                                isShowingAddMemorySheet = true
+                    }
+                    .mapStyle(.standard(elevation: .realistic))
+                    .onTapGesture { screenCoord in
+                        if let mapCoord = proxy.convert(screenCoord, from: .local) {
+                            newPinCoordinate = mapCoord
+                            isShowingAddMemorySheet = true
+                        }
+                    }
+                    .onMapCameraChange { context in
+                        mapRegion = context.region
+                    }
+                }
+                .ignoresSafeArea(.all, edges: .all)
+                
+                VStack(spacing: 0) {
+                    VStack(spacing: 0) {
+                        Spacer()
+                            .frame(height: 10)
+                        
+                        HStack {
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundColor(.gray)
+                                    .font(.system(size: 16))
+                                TextField("Search for restaurants, cafes...", text: $searchText)
+                                    .font(.system(size: 16))
+                                    .onChange(of: searchText) { _ in
+                                        if searchText.count > 2 {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                if searchText.count > 2 {
+                                                    searchForLocation()
+                                                }
+                                            }
+                                        } else {
+                                            searchResults.removeAll()
+                                        }
+                                    }
+                                if !searchText.isEmpty {
+                                    Button(action: { searchText = "" }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 16))
+                                    }
+                                }
+                            }
+                            .padding(10)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(12)
+                            .shadow(radius: 2)
+                        }
+                        .padding(.horizontal)
+                        
+                        if !searchResults.isEmpty && !searchText.isEmpty {
+                            ScrollView {
+                                LazyVStack(spacing: 0) {
+                                    ForEach(searchResults, id: \.self) { item in
+                                        Button(action: {
+                                            selectSearchResult(item)
+                                        }) {
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(item.name ?? "Unknown Location")
+                                                        .font(.subheadline)
+                                                        .foregroundColor(.primary)
+                                                    if let locality = item.placemark.locality {
+                                                        Text(locality)
+                                                            .font(.caption)
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                }
+                                                Spacer()
+                                                Image(systemName: "location.fill")
+                                                    .foregroundColor(.blue)
+                                                    .font(.caption)
+                                            }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .background(Color(.systemBackground))
+                                        
+                                        if item != searchResults.last {
+                                            Divider()
+                                                .padding(.leading, 12)
+                                        }
+                                    }
+                                }
+                            }
+                            .background(Color(.systemBackground))
+                            .cornerRadius(12)
+                            .shadow(radius: 3)
+                            .padding(.horizontal)
+                            .frame(maxHeight: 150)
+                        }
+                    }
+                    .background(Color.clear)
+                    .zIndex(1)
+                    
+                    Spacer()
+                    
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Button(action: zoomIn) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.blue)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 3)
+                            }
+                            
+                            Button(action: zoomOut) {
+                                Image(systemName: "minus.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.blue)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 3)
+                            }
+                            
+                            Button(action: centerMapOnUserLocation) {
+                                Image(systemName: "location.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.green)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 3)
                             }
                         }
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 100)
+                    }
+                }
+                .onTapGesture {
+                    if !searchResults.isEmpty {
+                        searchResults.removeAll()
                     }
                 }
                 
-                // Show a loading overlay when the ViewModel is busy
                 if viewModel.isLoading {
                     Color.black.opacity(0.4).ignoresSafeArea()
                     ProgressView("Working...")
@@ -105,73 +294,170 @@ struct ContentView: View {
                         Image(systemName: "location.fill")
                     }
                 }
-            }
-            .sheet(isPresented: $isShowingAddMemorySheet) {
-                if let coordinate = newPinCoordinate {
-                    // We need a new onSave closure that provides both the memory AND the photo
-                    AddMemoryView(
-                        coordinate: coordinate,
-                        onSave: { newMemory, photo in // <-- CHANGE THIS CLOSURE
-                            // Make sure we have a photo to upload
-                            guard let photo = photo else { return }
-                            
-                            Task {
-                                // Pass both the memory and photo to the view model
-                                await viewModel.addMemory(newMemory, photo: photo) // <-- CHANGE THIS CALL
-                            }
-                            isShowingAddMemorySheet = false
-                        },
-                        onCancel: { isShowingAddMemorySheet = false }
-                    )
-                }
-            }
-            .sheet(isPresented: isShowingMemoryDetailSheet) {
-                if let memory = selectedMemory {
-                    MemoryDetailView(memory: memory) {
-                        // Call the async deleteMemory function
-                        Task {
-                            await viewModel.deleteMemory(memory)
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 16) {
+                        Button(action: { isShowingAddMemorySheet = true }) {
+                            Image(systemName: "plus.circle.fill")
                         }
-                        selectedMemory = nil
+                        
+                        Button(action: { isShowingSettings = true }) {
+                            Image(systemName: "gearshape.fill")
+                        }
                     }
                 }
-            }
-            .alert("Location Not Found", isPresented: $showingSearchAlert, actions: { Button("OK") {} }, message: { Text("Could not find a location for '\(searchText)'.") })
-            .task {
-                // .task is the modern way to call an async function when a view appears.
-                await viewModel.fetchMemories()
             }
         }
     }
     
-    // MARK: - Functions
+    private var memoriesTab: some View {
+        NavigationStack {
+            List {
+                ForEach(viewModel.foodMemories) { memory in
+                    MemoryRowView(memory: memory) {
+                        selectedMemory = memory
+                    }
+                }
+            }
+            .navigationTitle("Food Memories")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { isShowingAddMemorySheet = true }) {
+                        Image(systemName: "plus.circle.fill")
+                    }
+                }
+            }
+        }
+    }
     
-    /// Uses MKLocalSearch to find a location from the search text and moves the map there.
+    private var statsTab: some View {
+        NavigationStack {
+            StatsView(memories: viewModel.foodMemories)
+                .navigationTitle("Statistics")
+                .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+    
     private func searchForLocation() {
+        guard !searchText.isEmpty else { return }
+        
+        isSearching = true
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = searchText
+        request.resultTypes = [.pointOfInterest, .address]
         
         let search = MKLocalSearch(request: request)
         search.start { response, error in
-            guard let mapItem = response?.mapItems.first else {
+            isSearching = false
+            
+            if let error = error {
+                print("Search error: \(error)")
                 showingSearchAlert = true
                 return
             }
             
-            withAnimation {
-                position = .region(MKCoordinateRegion(
-                    center: mapItem.placemark.coordinate,
-                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-                ))
-            }
+            searchResults = response?.mapItems ?? []
         }
     }
     
-    /// Animates the map back to the user's current location.
+    private func selectSearchResult(_ item: MKMapItem) {
+        let coordinate = item.placemark.coordinate
+        let region = MKCoordinateRegion(
+            center: coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        )
+        
+        withAnimation(.easeInOut(duration: 0.5)) {
+            position = .region(region)
+        }
+        
+        searchText = item.name ?? ""
+        searchResults.removeAll()
+    }
+    
+    private func zoomIn() {
+        let newSpan = MKCoordinateSpan(
+            latitudeDelta: mapRegion.span.latitudeDelta * 0.5,
+            longitudeDelta: mapRegion.span.longitudeDelta * 0.5
+        )
+        let newRegion = MKCoordinateRegion(center: mapRegion.center, span: newSpan)
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            position = .region(newRegion)
+        }
+    }
+    
+    private func zoomOut() {
+        let newSpan = MKCoordinateSpan(
+            latitudeDelta: mapRegion.span.latitudeDelta * 2.0,
+            longitudeDelta: mapRegion.span.longitudeDelta * 2.0
+        )
+        let newRegion = MKCoordinateRegion(center: mapRegion.center, span: newSpan)
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            position = .region(newRegion)
+        }
+    }
+    
     private func centerMapOnUserLocation() {
-        withAnimation {
+        withAnimation(.easeInOut(duration: 0.5)) {
             position = .userLocation(fallback: .automatic)
         }
+    }
+}
+
+struct MemoryRowView: View {
+    let memory: FoodMemory
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                if let photo = memory.photo {
+                    Image(uiImage: photo)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 60, height: 60)
+                        .clipped()
+                        .cornerRadius(8)
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(.systemGray5))
+                        .frame(width: 60, height: 60)
+                        .overlay(
+                            Image(systemName: "camera.fill")
+                                .foregroundColor(.gray)
+                        )
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(memory.name)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text(memory.dateAdded.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 2) {
+                        ForEach(1...5, id: \.self) { star in
+                            Image(systemName: star <= memory.rating ? "star.fill" : "star")
+                                .font(.caption2)
+                                .foregroundColor(star <= memory.rating ? .yellow : .gray)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
     }
 }
 
