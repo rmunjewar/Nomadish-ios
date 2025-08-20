@@ -2,36 +2,6 @@
 
 A Social Map for Food Memories - Your Personal Culinary Journey Tracker
 
-## ✨ What's New & Improved
-
-### 🎯 Enhanced User Experience
-
-- **Welcome Onboarding**: Beautiful 4-page tutorial for new users
-- **Tab-Based Navigation**: Clean separation between Map, Memories, and Stats
-- **Improved Search**: Real-time search with dropdown results and location suggestions
-- **Better Map Controls**: Zoom in/out buttons, user location centering, and smooth animations
-
-### 🗺️ Map Improvements
-
-- **Interactive Zoom Controls**: Dedicated zoom in/out buttons for easy navigation
-- **Enhanced Search**: Search for restaurants, cafes, and locations with instant results
-- **Better Pin Display**: Improved food memory pins with better styling and shadows
-- **Map Styling**: Realistic elevation and better visual appeal
-
-### 📱 Enhanced Views
-
-- **Memory Detail View**: Beautiful, card-based layout with photo hero section
-- **Add Memory View**: Improved form with better validation and user feedback
-- **Settings View**: Comprehensive app configuration and preferences
-- **Statistics View**: Beautiful charts and insights about your food journey
-
-### 🎨 Visual Improvements
-
-- **Modern Design**: Card-based layouts with shadows and rounded corners
-- **Better Typography**: Improved font hierarchy and readability
-- **Color Scheme**: Consistent purple accent color throughout the app
-- **Animations**: Smooth transitions and micro-interactions
-
 ## 🚀 Key Features
 
 ### Core Functionality
@@ -92,7 +62,7 @@ A Social Map for Food Memories - Your Personal Culinary Journey Tracker
 - **Privacy Controls**: Manage sharing and visibility settings
 - **App Configuration**: Toggle features and preferences
 
-## 🔮 Future Roadmap
+## Future Roadmap
 
 ### Phase 2: Social Features
 
@@ -107,13 +77,6 @@ A Social Map for Food Memories - Your Personal Culinary Journey Tracker
 - [ ] Cuisine clustering and trends
 - [ ] Social feed and discovery
 - [ ] Advanced analytics
-
-### Phase 4: Platform Expansion
-
-- [ ] Web dashboard
-- [ ] Android app
-- [ ] API for developers
-- [ ] Integration with food delivery services
 
 ## 🛠️ Development
 
@@ -141,17 +104,4 @@ A Social Map for Food Memories - Your Personal Culinary Journey Tracker
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🤝 Contributing
-
-We welcome contributions! Please feel free to submit pull requests or open issues for bugs and feature requests.
-
-## 📞 Support
-
-- **Email**: support@nomadish.app
-- **Documentation**: [docs.nomadish.app](https://docs.nomadish.app)
-- **Community**: [community.nomadish.app](https://community.nomadish.app)
-
 ---
-
-**Nomadish** - Where every meal tells a story, and every story has a place on the map. 🗺️❤️🍽️
